@@ -8,14 +8,18 @@ FUNCTIONS=(
     print_logo
     #2- make sure we have root privilege
     check_root
-    #3- update pacman repos
+    #3- make sure we have internet connection 
+    check_connection
+    #4- update pacman repos
     update_pacman
-    #4- install reflector to update our mirrorlist, we don't want the installation to take forever
+    #5- install reflector to update our mirrorlist, we don't want the installation to take forever
     install_reflector
-    #5- where are we ? where should we look for best servers ?
+    #6- where are we ? where should we look for best servers ?
     find_country
-    #6- update the mirrorlist accordingly
+    #7- update the mirrorlist accordingly
     update_mirrors
+    #8- enable ntp to automatically update the time and date
+    enable_ntp
 )
 
 # list of all packages to be installed
@@ -65,6 +69,17 @@ check_root() {
     fi
 }
 
+# make sure we are connected
+check_connection() {
+    if ping -c 1 google.com 1>> $LOG_FIEL 2>> $LOG_FIEL; then
+        echo -e "${GREEN}\t☑ ${WHITE}Checking connection${COL_DEFAULT}"
+    else
+        echo -e "${RED}\t☒ ${WHITE}Checking connection${COL_DEFAULT}"
+        echo -e "Installation failed at this point, Sorry!"
+        exit 1
+    fi
+}
+
 # get pacman started
 update_pacman() {
     if pacman -Syy 1>> $LOG_FIEL 2>> $LOG_FIEL; then
@@ -101,6 +116,17 @@ find_country() {
 # with a bit of luck we should we able to find some better mirrors around
 update_mirrors() {
     if (reflector -c GB --sort score --threads $(nproc) --save $MIRRORS_URI) 1>> $LOG_FIEL 2>> $LOG_FIEL; then
+        echo -e "${GREEN}\t☑ ${WHITE}Updating mirrors${COL_DEFAULT}"
+    else 
+        echo -e "${RED}\t☒ ${WHITE}Updating mirrors${COL_DEFAULT}"
+        echo -e "Installation failed at this point, Sorry!"
+        exit 1
+    fi
+}
+
+# enable network time sync
+enable_ntp() {
+    if timedatectl set-ntp true 1>> $LOG_FIEL 2>> $LOG_FIEL; then
         echo -e "${GREEN}\t☑ ${WHITE}Updating mirrors${COL_DEFAULT}"
     else 
         echo -e "${RED}\t☒ ${WHITE}Updating mirrors${COL_DEFAULT}"
