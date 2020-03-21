@@ -90,7 +90,7 @@ install_reflector() {
 
 # find location/country of user to pass to reflector
 find_country() {
-    if ! COUNTRY=$(whois $(curl -sSL ifconfig.me) | grep -iE ^country: | cut -d ' ' -f9) 1>> $LOG_FIEL 2>> $LOG_FIEL; then
+    if ! COUNTRY=$(whois $(curl -sSL ifconfig.me) | grep -iE -m1 ^country: | cut -d ' ' -f9) 1>> $LOG_FIEL 2>> $LOG_FIEL; then
         return 1
     fi
 }
@@ -138,7 +138,6 @@ main() {
                 echo -e "${RED}Installation failed at the above stage"
                 exit 1
             fi
-            
         else
             # otherwise don't ...
             ${STAGES[$n]}
