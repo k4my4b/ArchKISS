@@ -13,20 +13,22 @@ STAGES=(
     #3- make sure we have internet connection
     check_connection "Checking connection ..."
     #4- update pacman repos
-    update_pacman "Updating pacman ..."
+    update_pacman "Updating Pacman ..."
     #5- install reflector to update our mirrorlist, we don't want the installation to take forever
-    install_reflector "Installing reflector ..."
+    install_reflector "Installing Reflector ..."
     #6- where are we ? where should we look for best servers ?
-    find_country "Determining location ..."
+    find_country "Determining location ... [${COUNTRY}]"
     #7- update the mirrorlist accordingly
     update_mirrors "Updating mirrorlist ..."
     #8- enable ntp to automatically update the time and date
     enable_ntp "Enabling Network Time Protocol ..."
     #9- install the base packages first
-    #install_base "Installing base packages ..."
+    install_base "Installing base packages ..."
     #10- install all the remaining packages from the PACKAGES list one by one
     # this in itself doesn't have a status update but each package does
-    #install_pac ""
+    install_pac ""
+    # start installing aur packages
+    install_trizen ""
 )
 
 # base packages
@@ -58,7 +60,9 @@ PACKAGES=(
 )
 
 # list of all AUR packages to be installed
-PACKAGES_AUR=()
+PACKAGES_AUR=(
+    
+)
 
 #----------------------------------------------------------------
 #
@@ -116,14 +120,14 @@ print_logo() {
 
 # make sure we have root privilege
 check_root() {
-    if [[ ! $EUID -eq 0 ]]; then
+    if ! [ $(id -u) = 0 ] 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
 
 # make sure we are connected
 check_connection() {
-    if ! ping -c 3 google.com 1>>$LOG_FILE 2>>$LOG_FILE; then
+    if ! ping -c 1 google.com 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
@@ -151,7 +155,7 @@ find_country() {
 
 # with a bit of luck we should we able to find some better mirrors around
 update_mirrors() {
-    if ! (reflector -c ${COUNTRY} --sort score --threads $(nproc) --save $MIRRORS_URI) 1>>$LOG_FILE 2>>$LOG_FILE; then
+    if ! reflector -c ${COUNTRY} --sort score --threads $(nproc) --save $MIRRORS_URI 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
@@ -172,18 +176,18 @@ install_base() {
 
 # install the rest of the packges this doesm't mean that these are non-essential
 install_pac() {
-    echo -e "\t---------------------------------------"
-    echo -e "\t          Installing Packages          "
-    echo -e "\t---------------------------------------"
+    echo -e "\t----------------------------------------"
+    echo -e "\t      Installing Official Packages      "
+    echo -e "\t----------------------------------------"
     for pac in ${PACKAGES[@]}; do
-        echo -ne "${INDENT}${GREEN}${ICO_DEF}${SPACER}${WHITE}$pac${COL_DEFAULT}"
-        if pacstrap $MNT $pac 1>>$LOG_FILE 2>>$LOG_FILE; then
+        echo -ne "${INDENT}${WHITE}${ICO_DEF}${SPACER}${WHITE}$pac${COL_DEFAULT}"
+        if pacstrap ${MNT} $pac 1>>$LOG_FILE 2>>$LOG_FILE; then
             echo -ne "\r"
             echo -e "${INDENT}${GREEN}${ICO_OK}${SPACER}${WHITE}$pac${COL_DEFAULT}"
         else
             echo -ne "\r"
-            echo -e "${INDENT}${GREEN}${ICO_ERR}${SPACER}${WHITE}$pac${COL_DEFAULT}"
-            echo -e "${RED}Installation failed at the above stage"
+            echo -e "${INDENT}${RED}${ICO_ERR}${SPACER}${WHITE}$pac${COL_DEFAULT}"
+            echo -e "${RED}Installation failed at the above stage${COL_DEFAULT}"
             exit 1
         fi
     done
@@ -191,7 +195,21 @@ install_pac() {
 
 # install trizen from aur using PKGBUILD
 install_trizen() {
-    git clone https://aur.archlinux.org/trizen.git /tmp/trizen && cd /tmp/trizen && makepkg -s && pacman --root /tmp -U trizen-*.pkg.tar.xz
+    echo -e "\t----------------------------------------"
+    echo -e "\t          Installing AUR Helper         "
+    echo -e "\t----------------------------------------"
+    if ! (
+        useradd kiss && \ 
+        git clone https://aur.archlinux.org/trizen.git /tmp/trizen && \
+        cd /tmp/trizen && \
+        su kiss && \
+        makepkg -s && \
+        exit && \ 
+        userdel kiss && \
+        pacman --root ${MNT} -U trizen-*.pkg.tar.xz 
+    ) 1>>$LOG_FILE 2>>$LOG_FILE; then
+        return 1
+    fi
 }
 
 #----------------------------------------------------------------
@@ -224,7 +242,7 @@ main() {
             else
                 echo -ne "\r"
                 echo -e "${INDENT}${RED}${ICO_ERR}${SPACER}${WHITE}${STAGES[$((n + 1))]}${COL_DEFAULT}"
-                echo -e "${RED}Installation failed at the above stage"
+                echo -e "${RED}Installation failed at the above stage${COL_DEFAULT}"
                 exit 1
             fi
         else
