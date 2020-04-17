@@ -23,10 +23,10 @@ STAGES=(
     #8- enable ntp to automatically update the time and date
     enable_ntp "Enabling Network Time Protocol ..."
     #9- install the base packages first
-    install_base "Installing base packages ..."
+    #install_base "Installing base packages ..."
     #10- install all the remaining packages from the PACKAGES list one by one
     # this in itself doesn't have a status update but each package does
-    install_pac ""
+    #install_pac ""
 )
 
 # base packages
@@ -50,15 +50,29 @@ PACKAGES=(
     nvtop
     # Xorg stuff
     xorg
-    xinit
+    xorg-xinit
+    # SDDM
+    sddm
     # KDE plasma
+    plasma-meta
 )
 
-# where to save the logs ?
-LOG_FILE="install.log"
-LOG_DELIMITER="#-----------------------------------------------------------"
+# list of all AUR packages to be installed
+PACKAGES_AUR=()
 
-# default instllation route
+#----------------------------------------------------------------
+#
+#                          Default Stuff
+#
+#----------------------------------------------------------------
+
+# default pacman mirrorlist uri
+MIRRORS_URI="/etc/pacman.d/mirrorlist"
+
+# where to save the logs ?
+LOG_FILE="/tmp/archkiss.log"
+
+# default instllation route, default /mnt
 MNT="/tmp"
 
 # COLORS
@@ -67,8 +81,22 @@ WHITE="\e[97m"
 GREEN="\e[92m"
 COL_DEFAULT="\e[39m"
 
-# default pacman mirrorlist uri
-MIRRORS_URI="/etc/pacman.d/mirrorlist"
+# status icons
+ICO_DEF="☐"
+ICO_OK="☑"
+ICO_ERR="☒"
+
+# spacer between status icon and description could be a space, a kiss a heart you name it
+SPACER=" "
+
+# default intendtaion i.e one tab before status print
+INDENT="\t"
+
+#----------------------------------------------------------------
+#
+#                     Precedures Go Here
+#
+#----------------------------------------------------------------
 
 print_logo() {
     echo -e "\n"
@@ -123,7 +151,7 @@ find_country() {
 
 # with a bit of luck we should we able to find some better mirrors around
 update_mirrors() {
-    if ! (reflector -c GB --sort score --threads $(nproc) --save $MIRRORS_URI) 1>>$LOG_FILE 2>>$LOG_FILE; then
+    if ! (reflector -c ${COUNTRY} --sort score --threads $(nproc) --save $MIRRORS_URI) 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
@@ -145,20 +173,25 @@ install_base() {
 # install the rest of the packges this doesm't mean that these are non-essential
 install_pac() {
     echo -e "\t---------------------------------------"
-    echo -e "\t          Installing Packages          jobsjosasdasdasd"
+    echo -e "\t          Installing Packages          "
     echo -e "\t---------------------------------------"
     for pac in ${PACKAGES[@]}; do
-        echo -ne "\t${WHITE}☐ $pac${COL_DEFAULT}"
+        echo -ne "${INDENT}${GREEN}${ICO_DEF}${SPACER}${WHITE}$pac${COL_DEFAULT}"
         if pacstrap $MNT $pac 1>>$LOG_FILE 2>>$LOG_FILE; then
             echo -ne "\r"
-            echo -e "\t${GREEN}☑ ${WHITE}$pac${COL_DEFAULT}"
+            echo -e "${INDENT}${GREEN}${ICO_OK}${SPACER}${WHITE}$pac${COL_DEFAULT}"
         else
             echo -ne "\r"
-            echo -e "\t${RED}☒ ${WHITE}$pac${COL_DEFAULT}"
+            echo -e "${INDENT}${GREEN}${ICO_ERR}${SPACER}${WHITE}$pac${COL_DEFAULT}"
             echo -e "${RED}Installation failed at the above stage"
             exit 1
         fi
     done
+}
+
+# install trizen from aur using PKGBUILD
+install_trizen() {
+    git clone https://aur.archlinux.org/trizen.git /tmp/trizen && cd /tmp/trizen && makepkg -s && pacman --root /tmp -U trizen-*.pkg.tar.xz
 }
 
 #----------------------------------------------------------------
@@ -174,20 +207,20 @@ main() {
         if (($((n % 2)) == 0)); then
             # echo -ne "${LOG_DELIMITER}\n# \n${LOG_DELIMITER}" >>$LOG_FILE
             echo -e "-----------------------------------------------------------" >>$LOG_FILE
-            echo -e "\t ${STAGES[$n]}" >>$LOG_FILE
+            echo -e " ${STAGES[$n]}                                             " >>$LOG_FILE
             echo -e "-----------------------------------------------------------" >>$LOG_FILE
         fi
 
         # if the stage has a description procced with status update
         if [[ ! -z ${STAGES[$((n + 1))]} ]]; then
-            echo -ne "\t${WHITE}☐ ${STAGES[$((n + 1))]}${COL_DEFAULT}"
+            echo -ne "${INDENT}${WHITE}${ICO_DEF}${SPACER}${STAGES[$((n + 1))]}${COL_DEFAULT}"
             if ${STAGES[$n]}; then
                 echo -ne "\r"
-                echo -e "\t${GREEN}☑ ${WHITE}${STAGES[$((n + 1))]}${COL_DEFAULT}"
+                echo -e "${INDENT}${GREEN}${ICO_OK}${SPACER}${WHITE}${STAGES[$((n + 1))]}${COL_DEFAULT}"
                 echo -e ">> no errors encountered\n" >>$LOG_FILE
             else
                 echo -ne "\r"
-                echo -e "\t${RED}☒ ${WHITE}${STAGES[$((n + 1))]}${COL_DEFAULT}"
+                echo -e "${INDENT}${RED}${ICO_ERR}${SPACER}${WHITE}${STAGES[$((n + 1))]}${COL_DEFAULT}"
                 echo -e "${RED}Installation failed at the above stage"
                 exit 1
             fi
