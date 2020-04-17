@@ -202,6 +202,9 @@ install_trizen() {
 
 # avoid this mess as much as possible, if you can clean it up knock yourself out
 main() {
+    # create a logfile and makesure everyone and read/write
+    touch $LOG_FILE && chmod 666 $LOG_FILE
+
     for ((n = 0; n < ${#STAGES[@]}; n += 2)); do
         # make a note (in the log file) of where we are now
         if (($((n % 2)) == 0)); then
@@ -225,7 +228,7 @@ main() {
                 exit 1
             fi
         else
-            # otherwise don't ...
+            # otherwise do it quitely ...
             ${STAGES[$n]}
         fi
     done
