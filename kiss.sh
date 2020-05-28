@@ -195,7 +195,7 @@ install_pac() {
     echo -e "\t"
     for pac in "${PACKAGES[@]}"; do
         echo -ne "${INDENT}${COL_DEFAULT}${ICO_DEF}${SPACER}${COL_DEFAULT}$pac${COL_DEFAULT}"
-        if pacstrap "${ROOT}" "$pac" 1>>$LOG_FILE 2>>$LOG_FILE; then
+        if pacman --root "${ROOT}" -S "$pac" 1>>$LOG_FILE 2>>$LOG_FILE; then
             echo -ne "\r"
             echo -e "${INDENT}${GREEN}${ICO_OK}${SPACER}${COL_DEFAULT}$pac${COL_DEFAULT}"
         else
