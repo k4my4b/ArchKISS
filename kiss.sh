@@ -20,6 +20,8 @@ STAGES=(
     update_pacman "Updating Pacman ..."
     # install reflector to update our mirrorlist, we don't want the installation to take forever
     install_reflector "Installing Reflector ..."
+    # install whois, we need this for the next step
+    install_whois "Installing Whois"
     # where are we ? where should we look for best servers ?
     find_country "Determining location ... ["${COUNTRY}"]"
     # update the mirrorlist accordingly
@@ -119,7 +121,7 @@ INDENT="\t"
 print_logo() {
     echo -e "\n"
     echo -e "
-    ${COL_DEFAULT} █████╗ ██████╗  ██████╗██╗  ██╗ ${RED}██ ▄█▀ ██▓  ██████   ██████
+     ${COL_DEFAULT}█████╗ ██████╗  ██████╗██╗  ██╗ ${RED}██ ▄█▀ ██▓  ██████   ██████
     ${COL_DEFAULT}██╔══██╗██╔══██╗██╔════╝██║  ██║ ${RED}██▄█▒ ▓██▒▒██    ▒ ▒██    ▒
     ${COL_DEFAULT}███████║██████╔╝██║     ███████║${RED}▓███▄░ ▒██▒░ ▓██▄   ░ ▓██▄
     ${COL_DEFAULT}██╔══██║██╔══██╗██║     ██╔══██║${RED}▓██ █▄ ░██░  ▒   ██▒  ▒   ██▒
@@ -156,6 +158,13 @@ update_pacman() {
 # install reflector to get the mirrorlist updated, we don't want this installation to take forever
 install_reflector() {
     if ! pacman -S --needed --noconfirm reflector 1>>$LOG_FILE 2>>$LOG_FILE; then
+        return 1
+    fi
+}
+
+# install whois package we need this for the next step
+install_whois() {
+    if ! pacman -S --needed --noconfirm whois 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
