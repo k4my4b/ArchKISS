@@ -94,7 +94,7 @@ MIRRORS_URI="/etc/pacman.d/mirrorlist"
 LOG_FILE="/tmp/archkiss.log"
 
 # default instllation route, default /mnt
-MNT="/tmp"
+ROOT="/tmp"
 
 # COLORS
 RED="\e[91m"
@@ -183,7 +183,7 @@ enable_ntp() {
 
 # install the base system
 install_base() {
-    if ! pacstrap "$MNT" "${PACKAGES_BASE[@]}" 1>>$LOG_FILE 2>>$LOG_FILE; then
+    if ! pacstrap "${ROOT}" "${PACKAGES_BASE[@]}" 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
