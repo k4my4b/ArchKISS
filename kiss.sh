@@ -33,6 +33,10 @@ STAGES=(
     # install all the remaining packages from the PACKAGES list one by one
     # this in itself doesn't have a status update but each package does
     install_pac ""
+    # install fakeroot needed for compiling aur packages
+    install_fakeroot "Installing fakeroot ..."
+    # install binutils needed for compiling aur pacakges
+    install_binutils "Installing binutils ..."
     # install a AUR packages
     install_aur ""
     # install a bootloader, i.e. Grub
@@ -216,6 +220,19 @@ install_pac() {
     done
 }
 
+# install fakeroot package we need this for the next step
+install_fakeroot() {
+    if ! pacman --needed --noconfirm -S fakeroot 1>>$LOG_FILE 2>>$LOG_FILE; then
+        return 1
+    fi
+}
+
+# install binutils package we need this for the next step
+install_binutils() {
+    if ! pacman --needed --noconfirm -S binutils 1>>$LOG_FILE 2>>$LOG_FILE; then
+        return 1
+    fi
+}
 # install aur packages using PKGBUILD
 install_aur() {
     echo -e "\t"
