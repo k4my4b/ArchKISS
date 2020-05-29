@@ -37,6 +37,8 @@ STAGES=(
     install_fakeroot "Installing fakeroot ..."
     # install binutils needed for compiling aur pacakges
     install_binutils "Installing binutils ..."
+    # add the required installer user otherwise we can't compile and install aur packages
+    useradd_kiss "Adding ArchKISS user ..."
     # install a AUR packages
     install_aur ""
     # install a bootloader, i.e. Grub
@@ -230,6 +232,15 @@ install_fakeroot() {
 # install binutils package we need this for the next step
 install_binutils() {
     if ! pacman --needed --noconfirm -S binutils 1>>$LOG_FILE 2>>$LOG_FILE; then
+        return 1
+    fi
+}
+
+# adding a none root user with the all the privillages
+# is neccessary for compiling aur package (none-root) and installing
+# dependencies (root)
+useradd_kiss() {
+    if ! useradd "${ARCHKISS_USER}" && echo "${ARCHKISS_USER} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${ARCHKISS_USER} 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
