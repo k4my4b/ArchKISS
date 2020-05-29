@@ -17,11 +17,11 @@ STAGES=(
     # make sure we have internet connection
     check_connection "Checking connection ..."
     # update pacman repos
-    update_pacman "Updating Pacman ..."
+    update_pacman "Updating pacman ..."
     # install reflector to update our mirrorlist, we don't want the installation to take forever
-    install_reflector "Installing Reflector ..."
+    install_reflector "Installing reflector ..."
     # install whois, we need this for the next step
-    install_whois "Installing Whois"
+    install_whois "Installing whois"
     # where are we ? where should we look for best servers ?
     find_country "Determining location ... ["${COUNTRY}"]"
     # update the mirrorlist accordingly
@@ -102,7 +102,17 @@ MIRRORS_URI="/etc/pacman.d/mirrorlist"
 LOG_FILE="/tmp/archkiss.log"
 
 # default instllation route, default /mnt
+# this means you should mount everything under e.g. /mnt before calling ArchKISS
+# everything means:
+#                 /<root>
+#                 /boot/efi
+#                 /<whatever you might want to have mounted automatically>
 ROOT="/tmp"
+
+# installer username (a user with this name will be created)
+# this user has all the previliges without password requirement
+# we need this for compiling aur packages etc...
+ARCHKISS_USER="kiss"
 
 # COLORS
 RED="\e[91m"
@@ -163,14 +173,14 @@ update_pacman() {
 
 # install reflector to get the mirrorlist updated, we don't want this installation to take forever
 install_reflector() {
-    if ! pacman -S --needed --noconfirm reflector 1>>$LOG_FILE 2>>$LOG_FILE; then
+    if ! pacman --needed --noconfirm -S reflector 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
 
 # install whois package we need this for the next step
 install_whois() {
-    if ! pacman -S --needed --noconfirm whois 1>>$LOG_FILE 2>>$LOG_FILE; then
+    if ! pacman --needed --noconfirm -S whois 1>>$LOG_FILE 2>>$LOG_FILE; then
         return 1
     fi
 }
@@ -210,7 +220,7 @@ install_pac() {
     echo -e "\t"
     for pac in "${PACKAGES[@]}"; do
         echo -ne "${INDENT}${COL_DEFAULT}${ICO_DEF}${SPACER}${COL_DEFAULT}$pac${COL_DEFAULT}"
-        if pacman --root "${ROOT}" -S "$pac" 1>>$LOG_FILE 2>>$LOG_FILE; then
+        if pacman --needed --noconfirm --root "${ROOT}" -S "$pac" 1>>$LOG_FILE 2>>$LOG_FILE; then
             echo -ne "\r"
             echo -e "${INDENT}${GREEN}${ICO_OK}${SPACER}${COL_DEFAULT}$pac${COL_DEFAULT}"
         else
@@ -220,6 +230,9 @@ install_pac() {
             exit 1
         fi
     done
+    echo -e "\t"
+    echo -e "\t----------------- Done -----------------"
+    echo -e "\t"
 }
 
 # install fakeroot package we need this for the next step
@@ -244,6 +257,7 @@ useradd_kiss() {
         return 1
     fi
 }
+
 # install aur packages using PKGBUILD
 install_aur() {
     echo -e "\t"
@@ -251,18 +265,12 @@ install_aur() {
     echo -e "\t"
     for pac in "${PACKAGES_AUR[@]}"; do
         # extract the package name from the aur link
-        AUR_PAC_NAME="$(echo $pac | cut -d / -f 4 | cut -d . -f 1)"
+        AUR_PAC_NAME="$(echo ${pac} | cut -d / -f 4 | cut -d . -f 1)"
         echo -ne "${INDENT}${COL_DEFAULT}${ICO_DEF}${SPACER}${COL_DEFAULT}${AUR_PAC_NAME}${COL_DEFAULT}"
         if (
-            useradd kiss &&
-                su kiss -c "
-                git clone "$pac" /tmp/${AUR_PAC_NAME} &&
-                cd /tmp/${AUR_PAC_NAME} &&
-                makepkg -s &&
-                exit &&"
-            userdel kiss &&
-                pacman --root ${ROOT} -U *.pkg.tar.xz
-        ); then
+            su kiss -c "git clone "${pac}" ${ROOT}/tmp/${AUR_PAC_NAME} && cd ${ROOT}/tmp/${AUR_PAC_NAME} && MAKEFLAGS="-j$(nproc)" makepkg -s --noconfirm --needed"
+            pacman --noconfirm --needed --root "${ROOT}" -U ${ROOT}/tmp/${AUR_PAC_NAME}/*.pkg.tar.xz
+        ) 1>>$LOG_FILE 2>>$LOG_FILE; then
             echo -ne "\r"
             echo -e "${INDENT}${GREEN}${ICO_OK}${SPACER}${COL_DEFAULT}${AUR_PAC_NAME}${COL_DEFAULT}"
         else
@@ -272,6 +280,9 @@ install_aur() {
             exit 1
         fi
     done
+    echo -e "\t"
+    echo -e "\t----------------- Done -----------------"
+    echo -e "\t"
 }
 
 # ---------------------------------------------------------------------------- #
