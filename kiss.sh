@@ -313,6 +313,9 @@ main() {
     # create a logfile and makesure everyone can read/write
     touch ${LOG_FILE} && chmod 777 ${LOG_FILE}
 
+    trap "userdel kiss" SIGINT
+    trap "userdel kiss" EXIT
+
     for ((n = 0; n < ${#STAGES[@]}; n += 2)); do
         # make a note (in the log file) of where we are now
         if (($((n % 2)) == 0)); then
