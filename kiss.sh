@@ -198,7 +198,7 @@ find_country() {
 
 # with a bit of luck we should we able to find some better mirrors around
 update_mirrors() {
-    if ! reflector -c "${COUNTRY}" --sort score --threads "$(nproc)" --save $MIRRORS_URI 1>>${LOG_FILE} 2>>${LOG_FILE}; then
+    if ! reflector -c "${COUNTRY}" --latest 5 --sort rate --threads "$(nproc)" --save $MIRRORS_URI 1>>${LOG_FILE} 2>>${LOG_FILE}; then
         return 1
     fi
 }
