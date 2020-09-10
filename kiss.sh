@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 
 # ---------------------------------------------------------------------------- #
-#                   list of all stages to go through in order                  #
-#    altering the order in which each fucntion is called can result in total   #
-#       failure. Each function is followed by a short description used to      #
-#                            display status message.                           #
-#           If the string is empty no status update will be displayed          #
-#                           feel free to add to this                           #
+#     This program is free software: you can redistribute it and/or modify     #
+#     it under the terms of the GNU General Public License as published by     #
+#       the Free Software Foundation, either version 3 of the License, or      #
+#                      (at your option) any later version.                     #
+#        This program is distributed in the hope that it will be useful,       #
+#        but WITHOUT ANY WARRANTY; without even the implied warranty of        #
+#         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        #
+#                 GNU General Public License for more details.                 #
+#       You should have received a copy of the GNU General Public License      #
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>    #
 # ---------------------------------------------------------------------------- #
 
+# each stage followed by a description that will be displayed status of that said satge.
+# an empty message, "", would display no status
 STAGES=(
     # print the logo and welcome message
     print_logo ""
@@ -32,7 +38,7 @@ STAGES=(
     # install the base packages first
     install_base "Installing base packages ..."
     # install all the remaining packages from the PACKAGES list one by one
-    # this in itself doesn't have a status update but each package does
+    # this in itself doesn't have a status msg but each package does
     install_pac ""
     # install fakeroot needed for compiling aur packages
     install_fakeroot "Installing fakeroot ..."
@@ -49,7 +55,7 @@ STAGES=(
     install_grub "Installing bootloader (Grub) ..."
 )
 
-# base packages
+# base packages (why are these seperate ? pacstrap.)
 PACKAGES_BASE=(
     base
     base-devel
@@ -58,7 +64,7 @@ PACKAGES_BASE=(
     linux-firmware
 )
 
-# list of all other packages to be installed
+# list of all other packages to be installed (pacman)
 PACKAGES=(
     # Nvidia stuff
     nvidia-dkms
@@ -81,17 +87,20 @@ PACKAGES=(
     irqbalance
 )
 
-# list of all AUR packages to be installed
+# list of all AUR packages to be installed 
+# (these will most likely have to be compiled)
 PACKAGES_AUR=(
     https://aur.archlinux.org/trizen.git
     https://aur.archlinux.org/kwin-decoration-sierra-breeze-enhanced-git.git
-    https://aur.archlinux.org/latte-dock-git.git
+    #2 https://aur.archlinux.org/latte-dock-git.git
     https://aur.archlinux.org/ananicy-git.git
     https://aur.archlinux.org/kwin-lowlatency.git
 )
 
 # list of all services to enable
 SYSTEMD_SERVICES=(
+    nvidia-suspend.service
+    nvidia-hibernate.service
     irqbalance.service
 )
 
@@ -175,7 +184,8 @@ update_pacman() {
     fi
 }
 
-# install reflector to get the mirrorlist updated, we don't want this installation to take forever
+# install reflector to get the mirrorlist updated,
+# we don't want this installation to take forever
 install_reflector() {
     if ! pacman --needed --noconfirm -S reflector 1>>${LOG_FILE} 2>>${LOG_FILE}; then
         return 1
